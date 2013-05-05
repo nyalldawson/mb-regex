@@ -1,0 +1,128 @@
+
+Include "mapbasic.def"
+
+' Tests a string with a given regular expression, returns true if string matches regular expression
+' by default matches any part of string, so 
+' RegExTest("abc","a") returns true.
+' To match whole string, use anchors:
+' RegExTest("abc", "^a$") (returns false)
+Declare Function RegExTest Lib "MBRegEx.dll" Alias "regex_test" (ByVal strInput as String, ByVal strMatch as String) As Logical
+
+' Returns FIRST captured regular expression match from a string
+' eg, RegExMatch("abc", "a(.)") return "b"
+Declare Function RegExMatch Lib "MBRegEx.dll" Alias "regex_match" (ByVal strInput as String, ByVal strMatch as String) As String
+
+' Returns ALL captured regular expression matches from a string, and stores result in an array
+' MAKE SURE ARRAY IS OF SUFFICIENT LENGTH AND STRINGS HAVE BEEN PADDED WITH SPACES 
+' before calling this function
+' Function returns number of matches.
+' eg, RegExMatchAll("A test Match", "([A-Z])", sResult) returns 2, with sResult(1) ="A", sResult(2) = "M"
+Declare Function RegExMatchAll Lib "MBRegEx.dll" Alias "regex_match_all" (ByVal strInput as String, ByVal strMatch as String, sMatches() As String) As Integer
+
+' Returns multiple captured matches when regular expression has more than one
+' capturing group. 
+' MAKE SURE ARRAY IS OF SUFFICIENT LENGTH AND STRINGS HAVE BEEN PADDED WITH SPACES 
+' before calling this function
+' Function returns number of matches.
+' eg, RegExMatchMultiple("3.7.2", "(\d+)\.(\d+)\.(\d+)", sResults) returns 3, with sResult(1) = 3, sResult(2) = 7 and sResult(3) = 2
+Declare Function RegExMatchMultiple Lib "MBRegEx.dll" Alias "regex_match_multiple" (ByVal strInput as String, ByVal strMatch as String, sMatches() As String) As Integer
+
+' Replaces parts of string matching regular expression with specified replacement text
+' MAKE SURE DESTINATION STRING IS PADDED TO SUFFICIENT LENGTH PRIOR TO CALLING
+' returns true if replacements were made
+' eg RegExReplace("add ape hat", "^(.)|(?<=\s)(.)", "\u$1$2", sDest) fills sDest with "Add Ape Hat"
+Declare Function RegExReplace Lib "MBRegEx.dll" Alias "regex_replace" (ByVal strInput as String, ByVal strMatch as String, ByVal sReplace As String, sDest As String) As Logical
+
+' Prepares an array by filling it with empty strings of a specified length
+Declare Sub PrepareArray(sArray() As String, ByVal iBufferLength As Integer)
+
+Sub PrepareArray(sArray() As String, ByVal iBufferLength As Integer)
+	Dim i As Integer
+	For i = 1 to UBound(sArray)
+		sArray(i) = Space$(iBufferLength)
+	Next
+End Sub
+
+   
+Declare Sub Main
+Sub Main
+    Dim sRegEx As String
+    Dim sMatches(100) As String
+    Dim iResult, i As Integer
+    Print Chr$(12)
+    
+
+    ' RegExTest function, returns true if a string contains a specified regular expression
+    Print "-------"
+    Print "RegExTest Function"
+    Print "-------"
+    ' Find strings which contain something that looks like a number plate (eg ABC123)
+    sRegEx = "[A-Z]{3}\d{3}"
+    Print "Checking regex against 'ABC123' (should be true)"
+    Print RegExTest( "ABC123", sRegEx )
+    Print "Checking regex against 'Test String2' (should be false)"
+    Print RegExTest( "Test String2", sRegEx )
+    Print Chr$(13)
+    
+    
+    ' RegExMatch function, returns portion of a string with match a regular expression
+    Print "-------"
+    Print "RegExMatch Function"
+    Print "-------"
+    ' Try to strip house number from address
+    sRegEx = "^(\d+[A-Z]*)"
+    Print "Matching against '12A Main St'"
+    Print RegExMatch( "12A Main St", sRegEx )
+    Print "Matching against 'Upper Main St'"
+    Print RegExMatch( "Upper Main St", sRegEx )    
+    Print Chr$(13)
+
+    
+    ' RegExMatchAll function, returns ALL captured regular expression matches from a string, and stores result in an array
+    Print "-------"
+    Print "RegExMatchAll Function"
+    Print "-------"
+    ' Split a string into seperate words
+    sRegEx = "\b(\w+?)\b"
+    ' Prepare results array for a maximum of 30 characters in each string
+    Call PrepareArray(sMatches, 30)
+    Print "Matching against '12A Main St'"
+    iResult = RegExMatchAll( "12A Main St", sRegEx, sMatches )
+    For i = 1 to iResult
+        Print "Match " + i + " = " + sMatches(i)
+    Next
+    Print Chr$(13)
+    
+
+    ' RegExMatchMultiple function, returns multiple captured matches when regular expression has more than one
+    Print "-------"
+    Print "RegExMatchMultiple Function"
+    Print "-------"
+    ' Split a version nubmer into parts
+    sRegEx = "(\d+)\.(\d+)\.(\d+)"
+    ' Prepare results array for a maximum of 30 characters in each string
+    Call PrepareArray(sMatches, 30)
+    Print "Matching against '10.5.2'"
+    iResult = RegExMatchMultiple( "10.5.2", sRegEx, sMatches )
+    For i = 1 to iResult
+        Print "Match " + i + " = " + sMatches(i)
+    Next
+    Print Chr$(13)
+    
+    
+    ' RegExReplace function, replaces parts of string which match a regular expression  
+    Print "-------"
+    Print "RegExReplace Function"
+    Print "-------"
+    Dim sDest As String
+    ' Pad destination string before calling dll
+    sDest = Space$(100)
+    ' Remove non-alphanumeric characters from string
+    iResult = RegExReplace("T/:e@st!i~n&g#1,^2}3", "[^A-Za-z0-9]", "", sDest)
+    Print sDest
+     ' Capitalize string using captured groups
+    iResult = RegExReplace("title case", "^(.)|(?<=\s)(.)", "\u$1$2", sDest)
+    Print sDest
+	
+End Sub
+
